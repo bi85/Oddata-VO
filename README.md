@@ -7,3 +7,5 @@ Todo o material aqui compartilhado, tem intenção de realizar melhores prática
 Por favor, fique a vontade para deixar um pouco do seu conhecimento, aqui nesse repositório.
 
 Todos podem contribuir de forma ativa. Sejam bem vindos!!
+
+Mais informações, entre em contato.
