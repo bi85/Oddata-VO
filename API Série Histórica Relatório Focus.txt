@@ -1,0 +1,31 @@
+/*Criado por: Márcio Ferreira dos Santos*/
+/*Resolvendo problemas de negócio, utilizando o poder dos dados! E Agora, usando o pode da Linguagem M*/
+/*Site:https://oddata.com.br/*/
+/* Para mais informações, procure o site de dados abertos no endereço: https://dados.gov.br/dataset/expectativas-mercado*/
+
+/*Utilizando a API de dados abertos Expectativas de Mercado, utilizado no relatório FOCUS*/
+/*O Endereço Web onde utilizamos e copiamos essa API foi: https://olinda.bcb.gov.br/olinda/servico/Expectativas/versao/v1/aplicacao#!/recursos/ExpectativaMercadoMensais#eyJmb3JtdWxhcmlvIjp7IiRmb3JtYXQiOiJ0ZXh0L2NzdiIsIiR0b3AiOjEwMH0sInByb3ByaWVkYWRlcyI6WzAsMSwyLDMsNCw1LDYsNyw4LDldfQ==*/
+/*Essa API traz os dados em serie temporal, ou seja, por mês. Os dados são flutuantes, e podem ser alterados a quantidade de dados pelo parâmetro $top=10000 no script da API.*/
+let
+    Fonte = Csv.Document(Web.Contents("https://olinda.bcb.gov.br/olinda/servico/Expectativas/versao/v1/odata/ExpectativaMercadoMensais?$top=10000&$format=text/csv&$select=Indicador,Data,DataReferencia,Media,Mediana,DesvioPadrao,Minimo,Maximo,numeroRespondentes,baseCalculo"),[Delimiter=",", Columns=10, Encoding=65001, QuoteStyle=QuoteStyle.None]),
+    #"Cabeçalhos Promovidos" = Table.PromoteHeaders(Fonte, [PromoteAllScalars=true]),
+    #"Tipo Alterado" = Table.TransformColumnTypes(#"Cabeçalhos Promovidos",{
+        {"DataReferencia", type date},{"Media", type number}, {"Mediana", type number}, {"DesvioPadrao", type number}, 
+        {"Minimo", type number}, {"Maximo", type number}, {"numeroRespondentes", type number}, {"baseCalculo", Int64.Type}}),
+    #"Ano Inserido" = Table.AddColumn(#"Tipo Alterado", "Ano", each Date.Year([DataReferencia]), Int64.Type),
+    #"Mês Inserido" = Table.AddColumn(#"Ano Inserido", "Mês", each Date.ToText([DataReferencia],"MMM/yy"), type text),
+	  /*lista de índices que filtramos e não queremos em nossa base*/
+		#"Linhas Filtradas" = Table.SelectRows(#"Mês Inserido", 
+        each ([Indicador] <> "IPA-DI" 
+					and [Indicador] <> "IPA-M" 
+					and [Indicador] <> "IPCA Administrados"
+          and [Indicador] <> "IPCA Alimentação no domicílio" 
+					and [Indicador] <> "IPCA Bens industrializados" 
+          and [Indicador] <> "IPCA Livres" 
+					and [Indicador] <> "IPCA Serviços" 
+					and [Indicador] <> "IPCA-15")
+    ),
+    #"Colunas Reordenadas" = Table.ReorderColumns(#"Linhas Filtradas",{"Indicador", "Data", "DataReferencia", "Ano", "Mês", "Media", "Mediana", "DesvioPadrao", "Minimo", "Maximo", "numeroRespondentes", "baseCalculo"}),
+    #"Linhas Classificadas" = Table.Sort(#"Colunas Reordenadas",{{"DataReferencia", Order.Ascending}})
+in
+    #"Linhas Classificadas"
