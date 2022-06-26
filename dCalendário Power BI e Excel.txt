@@ -1,0 +1,84 @@
+/*Criado por: Márcio Ferreira dos Santos*/
+/*Site:https://oddata.com.br/*/
+/*Github:*/
+/*Qualquer atualização desse script será feito automaticamente no site, e no github*/
+let dCalendario =
+/*encapsulando as etapas dentro da dCalendário, dessa forma irá aparecer apenas uma etapa. Caso queira mudar, basta retirar o primeiro let dCalendário e no final, o ultimo in*/
+	let
+    /*ETAPA PARA REDUZIR TAMANHO DA DCALENDÁRIO*/
+
+		/*****************************************************************************************************************/
+		/*Criando data inicial e data final, baseado em datas digitadas***************************************************/
+		/*****************************************************************************************************************/
+		/*Data inicial digitada*/
+		/*DataInicial = #date(2022, 01, 01),*/
+		/*Determinando a data Final, quer será dia 31/12*/
+		/*DataFinal = Date.EndOfYear( DataInicial),*/
+		/*****************************************************************************************************************/
+
+    /*Determinando a data inicial, baseado na tabela fato inicial: Vendas, Cancelamento ou outra*/
+    DataInicial = Date.StartOfYear(List.Min(Orçamento[Período])),
+    /*Determinando a data Final, quer será dia 31/12, do ano da ultima data, da tabela fato escolhida.*/
+    DataFinal = Date.EndOfYear(List.Max(Orçamento[Período])),
+    
+
+    /*Aqui determinamos a quantidade de linhas da nossa tabela de calendário*/
+    QtdDiasCalendario = Duration.Days(DataFinal-DataInicial)+1,
+    
+    /*aqui inserimos a função para criação da nossa lista de datas*/
+    BaseDCalendario = List.Dates(DataInicial, QtdDiasCalendario, #duration(1, 0, 0, 0)), /*<---- inserido os parâmetros*/
+
+    /*vamos agora construir nossa tabela, utilizando duas etapas. A primeira, será de criação das colunas e a segunda etapa*/
+    /*será de criação dos dados, fazendo invocação de funções de data, e sempre lembrando de ter na mesma ordem as funções.*/
+
+    /*Nossos cabeçalhos de coluna*/
+    Cabecalho_DCalendario = type table[
+        Data Base=date,
+        Ano=Int64.Type,
+        Mês Número=text,
+        Nome do Mês=text,
+        Qtd Dias do Mês=Int64.Type,
+        Nome dia da semana=text,
+				Nome dia da semana resumido=text,
+        Semana do Mês=text,
+        Periodo Semana do Mês=text,
+				Módulo Semana=text,
+				Período Módulo Semana=text,
+        Semana do Ano=text,
+        Trimestre=text,
+        Mês Resumido=text,
+        Mês Ano Resumido=text,
+        Mês Ano Número=Int64.Type
+    ],
+    /*Nossos base de dados sendo criada*/
+    Dados_DCalendario = List.Transform(
+        BaseDCalendario,
+        each{
+            _ ,/*data base*/
+            Date.Year(_),/*ano*/
+            Date.Month(_),/*mês número*/
+            Text.Proper(Date.MonthName(_)),/*nome do mês*/
+            Date.DaysInMonth(_),/*quantidade dias do mês*/
+            Text.Proper(Date.DayOfWeekName(_)),/*nome dia da semana*/
+						Text.Proper(Date.ToText(_, "ddd")),/*nome dia resumido*/
+            "S" & Text.From(Date.WeekOfMonth(_)),/*semana do mês*/
+            Text.From(Date.StartOfWeek(_)) & " a " & Text.From(Date.EndOfWeek(_)),/*periodo semana do mês*/
+						/****criando os módulos DOM-QUI e QUI-DOM, para controle de períodos da semana****/
+						if _ >= Date.StartOfWeek(_) and _ <= Date.AddDays(Date.StartOfWeek(_),2) then "DOM-QUA" else "QUI-SAB",
+						/*****criando a coluna de datas dos módulos DOM-QUI e QUI-DOM*******/
+						if _ >= Date.StartOfWeek(_) and _ <= Date.AddDays(Date.StartOfWeek(_),2) then 
+										Text.From(Date.StartOfWeek(_)) & " a " & Text.From(Date.AddDays(Date.StartOfWeek(_),3))
+									 else Text.From(Date.AddDays(Date.StartOfWeek(_),4)) & " a " & Text.From(Date.AddDays(Date.StartOfWeek(_),7)),
+            "S" & Text.From(Date.WeekOfYear(_)), /*semana do ano*/
+            Text.From(Date.QuarterOfYear(_)) & "ºT", /*trimestre do Ano*/
+            Text.Proper(Date.ToText(_, "MMM")),/*mês resumido*/
+            Text.Proper(Date.ToText(_, "MMM/yy")),/*mês ano resumido*/
+            Date.ToText(_, "yyyyMM")/*mês ano número*/
+        }
+    ),
+
+    /*Juntando cabeçalho criado, aos dados, criando nossa tabela*/
+    Tabela_DCalendario = #table(Cabecalho_DCalendario, Dados_DCalendario)
+in 
+    Tabela_DCalendario
+in dCalendario
