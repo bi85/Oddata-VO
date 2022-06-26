@@ -1,6 +1,6 @@
-# BiTime
+# Oddata Vacation Ownership (Oddata VO)
 
-Esse repositório tem intuito de compartilhar material de estudos, livros, artigos, modelos, metodologias, estudos, cursos e práticas de mercado para o mercado de tempo compartilhado (Time Sharing).
+Esse repositório tem intuito de compartilhar material de estudos, livros, artigos, modelos, metodologias, estudos, cursos e práticas de mercado para o mercado de tempo compartilhado (Vacation Ownership).
 
 Todo o material aqui compartilhado, tem intenção de realizar melhores práticas, unir e revisar conceitos, compartilhando todo o material aqui presente.
 
