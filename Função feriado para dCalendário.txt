@@ -1,0 +1,77 @@
+/*CRIAÇÃO: Código de origem apresentado e criado pelo Laender do Datab*/
+/*MELHORIAS: A melhoria do código, realizado por Márcio Santos*/
+/*DESCRIÇÃO: Base para criar uma função e auxiliar na criação de colunas calculadas dentro da sua base dCalendário, sinalizando os feriados*/
+
+let
+    Fonte = (data as date) as record =>
+        let 
+        //obtém a data do domingo de páscoa usando o "Anonymous Gregorian algoritm" (fonte://en.wikipedia.org/wiki/date_of_easte)
+        fnPascoa = (y as number) as date =>
+            let 
+                a = Number.Mod(y,19),
+                b = Number.RoundDown(y/100),
+                c = Number.Mod(y,100),
+                d = Number.RoundDown(b/4),
+                e = Number.Mod(b,4),
+                f = Number.RoundDown((b+8) / 25),
+                g = Number.RoundDown((b -f + 1)/3),
+                h = Number.Mod((19 * a + b - d - g + 15), 30),
+                i = Number.RoundDown(c / 4),
+                k = Number.Mod(c, 4),
+                l = Number.RoundDown((32 + 2 * e + 2 * i - h - k), 7),
+                m = Number.RoundDown((a + 11*h + 22*l)/451),
+                n = Number.RoundDown(( h + l - 7*m + 114)/31),
+                o = Number.Mod((h + l - 7*m + 114), 31) + 1,
+                data = #date(y, n, o)
+            in 
+                data,
+        Ano = Date.Year(data),
+
+        /*FERIADOS FIXOS*/
+
+        FeriadosFixos = {
+            [ Data = #date(Ano, 01, 01), FeriadoNome = "Ano Novo",                   Feriado = true ],
+            [ Data = #date(Ano, 04, 21), FeriadoNome = "Tiradentes",                 Feriado = true ],
+            [ Data = #date(Ano, 05, 01), FeriadoNome = "Dia do Trabalho",            Feriado = true ],
+            [ Data = #date(Ano, 09, 07), FeriadoNome = "Dia da Independência",       Feriado = true ],
+            [ Data = #date(Ano, 10, 12), FeriadoNome = "Nossa Sra. Aparecida",       Feriado = true ],
+            [ Data = #date(Ano, 11, 02), FeriadoNome = "Finados",                    Feriado = true ],
+            [ Data = #date(Ano, 11, 15), FeriadoNome = "Proclamação da Republica",   Feriado = true ],
+            [ Data = #date(Ano, 12, 25), FeriadoNome = "Natal",                      Feriado = true ]
+        },
+
+        /*FERIADOS MÓVEIS*/
+
+        Pascoa = fnPascoa(Ano),
+
+        FeriadosMoveis = {
+            [ Data = Date.AddDays(Pascoa, -47), FeriadoNome = "Carnaval",            Feriado = true ],
+            [ Data = Date.AddDays(Pascoa, -2),  FeriadoNome = "Paixão de Cristo",    Feriado = true ],
+            [ Data = Pascoa,                    FeriadoNome = "Domingo de Páscoa",   Feriado = true ],
+            [ Data = Date.AddDays(Pascoa, 60),  FeriadoNome = "Corpus Christi",      Feriado = true ]
+        },
+
+        FiltraFeriado = List.Select(FeriadosFixos & FeriadosMoveis, each [Data] = data),
+        registroFeriado = 
+						if List.Count(FiltraFeriado) = 1 then FiltraFeriado{0} 
+						else [ Data = data, FeriadoNome = null, Feriado = false],
+        FimSemana = Date.DayOfWeek(data, Day.Monday) >= 5,
+				DataIntervaloFeriado = 
+						if Date.DayOfWeek(data, Day.Sunday) = 1 and List.Count(FiltraFeriado) = 1  then Date.ToText(Date.AddDays(data, -2)) & " a " & Date.ToText(data)
+						else if Date.DayOfWeek(data, Day.Sunday) = 2 and List.Count(FiltraFeriado) = 1   then Date.ToText(Date.AddDays(data, -3)) & " a " & Date.ToText(data)
+						else if Date.DayOfWeek(data, Day.Sunday) = 4 and List.Count(FiltraFeriado) = 1   then Date.ToText(data)  & " a " & Date.ToText(Date.AddDays(data, 3)) 
+						else if Date.DayOfWeek(data, Day.Sunday) = 5 and List.Count(FiltraFeriado) = 1   then Date.ToText(data)  & " a " & Date.ToText(Date.AddDays(data, 2))
+						else null,
+				ModuloFeriado = 
+						if Date.DayOfWeek(data, Day.Sunday) = 1 and List.Count(FiltraFeriado) = 1  then Text.Upper(Date.ToText(Date.AddDays(data, -2), "ddd")) & " | " & Text.Upper(Date.ToText(data, "ddd"))
+						else if Date.DayOfWeek(data, Day.Sunday) = 2 and List.Count(FiltraFeriado) = 1   then Text.Upper(Date.ToText(Date.AddDays(data, -3), "ddd")) & " | " & Text.Upper(Date.ToText(data, "ddd"))
+						else if Date.DayOfWeek(data, Day.Sunday) = 4 and List.Count(FiltraFeriado) = 1   then Text.Upper(Date.ToText(data, "ddd"))  & " | " & Text.Upper(Date.ToText(Date.AddDays(data, 3), "ddd"))
+						else if Date.DayOfWeek(data, Day.Sunday) = 5 and List.Count(FiltraFeriado) = 1   then Text.Upper(Date.ToText(data, "ddd"))  & " | " & Text.Upper(Date.ToText(Date.AddDays(data, 2), "ddd"))
+						else null,
+        registroDiaSemana = [ DiaSemana = Date.DayOfWeekName(data), FimSemana = FimSemana, DiaUtil = not FimSemana and not registroFeriado, 
+														DataIntervaloFeriado = DataIntervaloFeriado, IntervaloFeriado = IntervaloFeriado]
+
+    	in 
+           registroFeriado & registroDiaSemana
+in
+    Fonte
